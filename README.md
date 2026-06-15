@@ -16,6 +16,7 @@ If you find TimeSformer useful in your research, please use the following BibTeX
 
 # Model Zoo
 可以用HMDB51先训练一下，数据集链接https://www.kaggle.com/datasets/easonlll/hmdb51
+
 We provide TimeSformer models pretrained on Kinetics-400 (K400), Kinetics-600 (K600), Something-Something-V2 (SSv2), and HowTo100M datasets.
 
 | name | dataset | # of frames | spatial crop | acc@1 | acc@5 | url |
