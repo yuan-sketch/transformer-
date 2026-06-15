@@ -341,16 +341,18 @@ class VisionTransformer(nn.Module):
             # 4. 拼接回最开始剥离的 CLS token
             x = torch.cat((cls_tokens, x), dim=1)
 
-        ## Attention blocks
+        ## 遍历所有 Transformer 注意力模块，逐层前向传播
         for blk in self.blocks:
+            # 传入特征 + 批次、帧数、宽度，执行单块注意力/前馈计算
             x = blk(x, B, T, W)
 
-        ### Predictions for space-only baseline
+        ## 分支：纯空间注意力基线模型
         if self.attention_type == 'space_only':
             x = rearrange(x, '(b t) n m -> b t n m',b=B,t=T)
             x = torch.mean(x, 1) # averaging predictions for every frame
 
         x = self.norm(x)
+        # 取出每一样本的 CLS Token 作为最终输出
         return x[:, 0]
 
     def forward(self, x):
@@ -359,7 +361,12 @@ class VisionTransformer(nn.Module):
         return x
 
 def _conv_filter(state_dict, patch_size=16):
-    """ convert patch embedding weight from manual patchify + linear proj to conv"""
+    """
+    将手动分块+线性投影的 patch embedding 权重，转为卷积核格式
+    param state_dict: 模型权重字典 (torch.state_dict)
+    param patch_size: 图像分块大小，默认 16
+    return: 转换后的权重字典
+    """
     out_dict = {}
     for k, v in state_dict.items():
         if 'patch_embed.proj.weight' in k:
@@ -373,10 +380,27 @@ def _conv_filter(state_dict, patch_size=16):
 class vit_base_patch16_224(nn.Module):
     def __init__(self, cfg, **kwargs):
         super(vit_base_patch16_224, self).__init__()
+        # 标记是否启用预训练权重
         self.pretrained=True
+        # ViT 标准分块大小：16×16
         patch_size = 16
-        self.model = VisionTransformer(img_size=cfg.DATA.TRAIN_CROP_SIZE, num_classes=cfg.MODEL.NUM_CLASSES, patch_size=patch_size, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1, num_frames=cfg.DATA.NUM_FRAMES, attention_type=cfg.TIMESFORMER.ATTENTION_TYPE, **kwargs)
-
+        self.model = VisionTransformer(
+            img_size=cfg.DATA.TRAIN_CROP_SIZE,           # 训练图像分辨率 224
+            num_classes=cfg.MODEL.NUM_CLASSES,           # 分类任务类别数
+            patch_size=patch_size,                       # patch 尺寸 16
+            embed_dim=768,                               # 特征维度 768
+            depth=12,                                    # Transformer 块层数 12
+            num_heads=12,                                # 多头注意力头数 12
+            mlp_ratio=4,                                 # MLP 隐藏层扩张系数
+            qkv_bias=True,                               # Q/K/V 线性层启用偏置
+            norm_layer=partial(nn.LayerNorm, eps=1e-6),  # 层归一化：固定 eps=1e-6
+            drop_rate=0.,                                # 全局 dropout
+            attn_drop_rate=0.,                           # 注意力 dropout
+            drop_path_rate=0.1,                          # 随机深度 drop path 概率
+            num_frames=cfg.DATA.NUM_FRAMES,              # 视频帧数 T
+            attention_type=cfg.TIMESFORMER.ATTENTION_TYPE,# 注意力类型：space_only / spacetime
+            **kwargs)
+        # 保存注意力类型，供后续权重加载/逻辑判断使用
         self.attention_type = cfg.TIMESFORMER.ATTENTION_TYPE
         self.model.default_cfg = default_cfgs['vit_base_patch16_224']
         self.num_patches = (cfg.DATA.TRAIN_CROP_SIZE // patch_size) * (cfg.DATA.TRAIN_CROP_SIZE // patch_size)
