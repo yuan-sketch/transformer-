@@ -404,9 +404,19 @@ class vit_base_patch16_224(nn.Module):
         self.attention_type = cfg.TIMESFORMER.ATTENTION_TYPE
         self.model.default_cfg = default_cfgs['vit_base_patch16_224']
         self.num_patches = (cfg.DATA.TRAIN_CROP_SIZE // patch_size) * (cfg.DATA.TRAIN_CROP_SIZE // patch_size)
+        # 从配置读取预训练权重路径
         pretrained_model=cfg.TIMESFORMER.PRETRAINED_MODEL
         if self.pretrained:
-            load_pretrained(self.model, num_classes=self.model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter, img_size=cfg.DATA.TRAIN_CROP_SIZE, num_patches=self.num_patches, attention_type=self.attention_type, pretrained_model=pretrained_model)
+            load_pretrained(
+                self.model,
+                num_classes=self.model.num_classes,
+                in_chans=kwargs.get('in_chans', 3),       # 输入通道，默认RGB=3
+                filter_fn=_conv_filter,                   # 权重转换函数：linear -> conv 格式
+                img_size=cfg.DATA.TRAIN_CROP_SIZE,
+                num_patches=self.num_patches,
+                attention_type=self.attention_type,
+                pretrained_model=pretrained_model         # 预训练文件路径
+            )
 
     def forward(self, x):
         x = self.model(x)
@@ -417,7 +427,22 @@ class TimeSformer(nn.Module):
     def __init__(self, img_size=224, patch_size=16, num_classes=400, num_frames=8, attention_type='divided_space_time',  pretrained_model='', **kwargs):
         super(TimeSformer, self).__init__()
         self.pretrained=True
-        self.model = VisionTransformer(img_size=img_size, num_classes=num_classes, patch_size=patch_size, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4, qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1, num_frames=num_frames, attention_type=attention_type, **kwargs)
+        self.model = VisionTransformer(
+            img_size=img_size,
+            num_classes=num_classes,
+            patch_size=patch_size,
+            embed_dim=768,
+            depth=12,
+            num_heads=12,
+            mlp_ratio=4,
+            qkv_bias=True,
+            norm_layer=partial(nn.LayerNorm, eps=1e-6),
+            drop_rate=0.,
+            attn_drop_rate=0.,
+            drop_path_rate=0.1,
+            num_frames=num_frames,
+            attention_type=attention_type,
+            **kwargs)
 
         self.attention_type = attention_type
         self.model.default_cfg = default_cfgs['vit_base_patch'+str(patch_size)+'_224']
