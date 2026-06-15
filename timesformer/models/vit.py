@@ -328,14 +328,17 @@ class VisionTransformer(nn.Module):
             x = rearrange(x, '(b t) n m -> (b n) t m',b=B,t=T)
             ## Resizing time embeddings in case they don't match
             if T != self.time_embed.size(1):
-                time_embed = self.time_embed.transpose(1, 2)
+                time_embed = self.time_embed.transpose(1, 2)      # [1, T_train, m] → [1, m, T_train]
+                # 一维插值：缩放到当前帧数 T，最近邻插值
                 new_time_embed = F.interpolate(time_embed, size=(T), mode='nearest')
                 new_time_embed = new_time_embed.transpose(1, 2)
-                x = x + new_time_embed
+                x = x + new_time_embed              # 特征 + 缩放后的时间编码
             else:
                 x = x + self.time_embed
             x = self.time_drop(x)
+            # 3. 维度还原：把拆出的时间维度合并回去
             x = rearrange(x, '(b n) t m -> b (n t) m',b=B,t=T)
+            # 4. 拼接回最开始剥离的 CLS token
             x = torch.cat((cls_tokens, x), dim=1)
 
         ## Attention blocks
