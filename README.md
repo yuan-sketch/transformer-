@@ -1,8 +1,7 @@
 # TimeSformer
 
-This is an official pytorch implementation of our ICML 2021 paper [Is Space-Time Attention All You Need for Video Understanding?](https://arxiv.org/pdf/2102.05095.pdf). In this repository, we provide PyTorch code for training and testing our proposed TimeSformer model. TimeSformer provides an efficient video classification framework that achieves state-of-the-art results on several video action recognition benchmarks such as Kinetics-400.
+这是pytorch对ICML 2021论文的一个官方实现， [Is Space-Time Attention All You Need for Video Understanding?](https://arxiv.org/pdf/2102.05095.pdf). 在此存储库中，我们提供PyTorch代码，用于培训和测试我们提出的 TimeSformer models。TimeSformer提供了一个高效的视频分类框架，可在多个视频动作识别基准（如Kinetics-400）上获得最先进的结果。如果您发现TimeSformer在您的研究中有用，请使用以下BibTeX条目进行引用。
 
-If you find TimeSformer useful in your research, please use the following BibTeX entry for citation.
 
 ```BibTeX
 @inproceedings{gberta_2021_ICML,
@@ -17,7 +16,7 @@ If you find TimeSformer useful in your research, please use the following BibTeX
 # Model Zoo
 可以用HMDB51先训练一下，数据集链接https://www.kaggle.com/datasets/easonlll/hmdb51
 
-We provide TimeSformer models pretrained on Kinetics-400 (K400), Kinetics-600 (K600), Something-Something-V2 (SSv2), and HowTo100M datasets.
+我们提供了在Kinetics-400（K400）、Kinetics-600（K600）、Something-Something-V2（SSv2）和Howto1000m数据集上预训练的TimeSformer models
 
 | name | dataset | # of frames | spatial crop | acc@1 | acc@5 | url |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -44,7 +43,7 @@ We provide TimeSformer models pretrained on Kinetics-400 (K400), Kinetics-600 (K
 | TimeSformer | HowTo100M | 64 | 448 | 68.3s | 62.2 | [model](https://www.dropbox.com/s/15bvqltl1j5vyp3/TimeSformer_divST_64x32_224_HowTo100M.pyth?dl=0) |
 | TimeSformer | HowTo100M | 96 | 224 | 102.4s | 62.6 | [model](https://www.dropbox.com/s/t2mzgahnfhgakma/TimeSformer_divST_96x32_224_HowTo100M.pyth?dl=0) |
 
-We note that these models were re-trained using a slightly different implementation than the one used in the paper. Therefore, there might be a small difference in performance compared to the results reported in the paper.
+我们注意到，使用与本文中使用的实现稍有不同的实现对这些模型进行了重新训练。因此，与本文报道的结果相比，性能可能会有微小的差异。
 
 You can load the pretrained models as follows:
 
