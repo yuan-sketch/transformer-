@@ -318,10 +318,13 @@ class VisionTransformer(nn.Module):
         x = self.pos_drop(x)
 
 
-        ## Time Embeddings
+        ## 仅在不是纯空间注意力时，启用时间编码（时序建模）
         if self.attention_type != 'space_only':
-            cls_tokens = x[:B, 0, :].unsqueeze(1)
-            x = x[:,1:]
+            # 1. 单独剥离 CLS token：全局分类标记，不参与时序变换
+            cls_tokens = x[:B, 0, :].unsqueeze(1)          # shape: [B, 1, m]
+            # 剔除 cls，只保留所有空间patch特征
+            x = x[:,1:]                                    # shape: [B*T, n, m]
+            # 2. 维度重排：把「帧维度」单独拆出来，适配时间编码
             x = rearrange(x, '(b t) n m -> (b n) t m',b=B,t=T)
             ## Resizing time embeddings in case they don't match
             if T != self.time_embed.size(1):
