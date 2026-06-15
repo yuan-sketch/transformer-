@@ -288,18 +288,30 @@ class VisionTransformer(nn.Module):
         cls_tokens = self.cls_token.expand(x.size(0), -1, -1)
         x = torch.cat((cls_tokens, x), dim=1)
 
-        ## resizing the positional embeddings in case they don't match the input at inference
+        ## 当输入token数量 和 预设位置编码长度不一致时，执行缩放逻辑
         if x.size(1) != self.pos_embed.size(1):
-            pos_embed = self.pos_embed
+            pos_embed = self.pos_embed      # 原始位置编码: shape [1, num_tokens, embed_dim]
+            # 1. 单独提取 CLS token 对应的位置编码（固定不变，不插值）
+            # pos_embed[0,0,:] 取batch=0、cls位置、全维度
+            # unsqueeze 两次补维度 -> [1, 1, embed_dim]
             cls_pos_embed = pos_embed[0,0,:].unsqueeze(0).unsqueeze(1)
+            # 2. 提取除cls外的图像块位置编码: [1, num_patches, embed_dim]
             other_pos_embed = pos_embed[0,1:,:].unsqueeze(0).transpose(1, 2)
+            # 3. 计算原始图像块的边长 P (训练时是标准正方形分块)
             P = int(other_pos_embed.size(2) ** 0.5)
+            # 新分辨率下特征图高、宽
             H = x.size(1) // W
+            # 4.一维位置编码 reshape 回二维特征图 [1, embed_dim, P, P]
             other_pos_embed = other_pos_embed.reshape(1, x.size(2), P, P)
+            # 5. 插值缩放至新尺寸 (H, W)，mode='nearest' 最近邻插值
             new_pos_embed = F.interpolate(other_pos_embed, size=(H, W), mode='nearest')
+            # 6. 展平空间维度：[1, embed_dim, H*W]
             new_pos_embed = new_pos_embed.flatten(2)
+            # 7. 转回 Transformer 格式: [1, H*W, embed_dim]
             new_pos_embed = new_pos_embed.transpose(1, 2)
+            # 8. 拼接 cls 位置编码 + 新图像块位置编码
             new_pos_embed = torch.cat((cls_pos_embed, new_pos_embed), 1)
+            # 特征 + 缩放后的位置编码
             x = x + new_pos_embed
         else:
             x = x + self.pos_embed
